@@ -17,9 +17,11 @@ const globalUsage = `🍤 Claim  - PagerDuty 🍤
 
 Will generate claim forms for the past month from this date.
 
-Maybe run this?
+Maybe run one of these?
 
-	$ claimpd -p 'xxx' -s 'orion' -t 'now-1mo'
+	$ claimpd -p 'xxx' -s 'orion' --since 'now-3mo' --until 'now+1d'
+	$ claimpd -p 'xxx' -s 'orion' --since 'now-1w'
+    $ claimpd -p 'xxx' -s 'orion'
 
 `
 
@@ -28,7 +30,8 @@ const rmPerWeek = 455.00
 
 var authtoken string
 var scheduleName string
-var tparseQuery string
+var tparseSinceQuery string
+var tparseUntilQuery string
 
 func newRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -49,7 +52,7 @@ func newRootCmd() *cobra.Command {
 				return err
 			}
 
-			entries, _ := fetchScheduleEntries(tparseQuery, scheduleName)
+			entries, _ := fetchScheduleEntries(tparseSinceQuery, tparseUntilQuery, scheduleName)
 
 			_, err := makePdf(entries)
 			return err
@@ -58,7 +61,8 @@ func newRootCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&authtoken, "pd-api-key", "p", "", "PagerDuty v2 API Key")
 	cmd.Flags().StringVarP(&scheduleName, "schedule-name", "s", "", "PagerDuty v2 Schedule Name for Query")
-	cmd.Flags().StringVarP(&tparseQuery, "since", "t", "now-1mo", "Generate report since when? Example: now-2w or now-3mo (default: now-1mo)")
+	cmd.Flags().StringVarP(&tparseSinceQuery, "since", "", "now-1mo", "Generate report since when? Example: now-2w or now-3mo")
+	cmd.Flags().StringVarP(&tparseUntilQuery, "until", "", "now", "Generate report until when? Example: now-2w or now-3mo ")
 
 	return cmd
 }
@@ -95,7 +99,7 @@ func downloadPdfTemplate() error {
 	return nil
 }
 
-func fetchScheduleEntries(tparseQuery, scheduleQuery string) ([]pagerduty.RenderedScheduleEntry, error) {
+func fetchScheduleEntries(tparseSinceQuery, tparseUntilQuery, scheduleQuery string) ([]pagerduty.RenderedScheduleEntry, error) {
 	client := pagerduty.NewClient(authtoken)
 
 	res, err := client.ListSchedules(pagerduty.ListSchedulesOptions{Query: scheduleQuery})
@@ -109,19 +113,24 @@ func fetchScheduleEntries(tparseQuery, scheduleQuery string) ([]pagerduty.Render
 		break
 	}
 
-	since, err := tparse.ParseNow(time.RFC3339, tparseQuery)
+	since, err := tparse.ParseNow(time.RFC3339, tparseSinceQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	until, err := tparse.ParseNow(time.RFC3339, tparseUntilQuery)
 	if err != nil {
 		return nil, err
 	}
 	if schedule, err := client.GetSchedule(pdScheduleId, pagerduty.GetScheduleOptions{
 		Since: since.Format(time.RFC3339),
-		Until: time.Now().Format(time.RFC3339),
+		Until: until.Format(time.RFC3339),
 	}); err != nil {
 		return []pagerduty.RenderedScheduleEntry{}, err
 	} else {
 		var entries []pagerduty.RenderedScheduleEntry
-		for _, scheduleLayer := range schedule.ScheduleLayers {
-			entries = append(entries, scheduleLayer.RenderedScheduleEntries...)
+		for _, renderedScheduleEntry := range schedule.FinalSchedule.RenderedScheduleEntries {
+			entries = append(entries, renderedScheduleEntry)
 		}
 		return entries, nil
 	}
@@ -161,8 +170,12 @@ func makePdf(entries []pagerduty.RenderedScheduleEntry) ([]string, error) {
 		pdf.SetXY(57, 56)
 		pdf.Write(lineHt, name)
 
+		until, err := tparse.ParseNow(time.RFC3339, tparseUntilQuery)
+		if err != nil {
+			return nil, err
+		}
 		pdf.SetXY(57, 63)
-		pdf.Write(lineHt, time.Now().Format("Monday, 02 Jan 2006"))
+		pdf.Write(lineHt, until.Format("Monday, 02 Jan 2006"))
 
 		for index, period := range periods {
 			if index == 10 {

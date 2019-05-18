@@ -26,12 +26,12 @@
   version = "v1.0"
 
 [[projects]]
-  digest = "1:20011645d7e842fd4dbadc6bb4cb60956c0de9c8814923bb6149c6e4081ce1d4"
+  digest = "1:c9569285dae689c3714582ca1050eeb2ce4d3e4c523dec1e9b1e1ba0ce532f9b"
   name = "github.com/jung-kurt/gofpdf"
   packages = ["."]
   pruneopts = "UT"
-  revision = "70a9e1699f5ab939c2306961cf80517e19885a92"
-  version = "2.1.3"
+  revision = "63b1b6311f9f0fc5e765111030f9e3957b2a67f6"
+  version = "v2.7.1"
 
 [[projects]]
   digest = "1:c874dad16816f86f49476f6f70ac82e282ec8c7c256b2b187461ad10cdef9e06"
