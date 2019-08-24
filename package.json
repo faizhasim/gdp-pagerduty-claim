@@ -1,0 +1,11 @@
+{
+  "name": "claim-pagerduty",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:faizhasim/gdp-pagerduty-claim.git",
+  "author": "Mohd Faiz Hasim <faizhasim@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "serverless": "^1.42.3"
+  }
+}

@@ -1,0 +1,105 @@
+service: claim-pagerduty
+
+frameworkVersion: ">=1.28.0 <2.0.0"
+
+provider:
+  name: aws
+  runtime: go1.x
+
+# you can overwrite defaults here
+#  stage: dev
+#  region: us-east-1
+
+# you can add statements to the Lambda function's IAM Role here
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:*"
+      Resource:
+        Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - Ref: tmpbucket
+            - "/*"
+    - Effect: "Allow"
+      Action:
+        - "s3:*"
+      Resource:
+        Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - Ref: tmpbucket
+
+package:
+ exclude:
+   - ./**
+ include:
+   - ./bin/**
+
+functions:
+  pdfclaim:
+    handler: bin/pdfclaim
+    environment:
+      PAGERDUTY_SCHEDULE_NAME: ${env:PAGERDUTY_SCHEDULE_NAME}
+      PDF_BUCKET_NAME: "${self:service}-${self:provider.stage}-${env:PAGERDUTY_SCHEDULE_NAME}-tmpbucket"
+    events:
+      - http:
+          path: pdfclaim/orion
+          method: get
+
+resources:
+  Resources:
+    tmpbucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: "${self:service}-${self:provider.stage}-${env:PAGERDUTY_SCHEDULE_NAME}-tmpbucket"
+        AccessControl: PublicRead
+        LifecycleConfiguration:
+          Rules:
+            - Id: DeleteEverythingInADay
+              Prefix: ""
+              Status: Enabled
+              ExpirationInDays: 1
+    tmpBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref tmpbucket
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadForGetBucketObjects
+              Effect: Allow
+              Principal: '*'
+              Action:
+                - 's3:GetObject'
+              Resource:
+                Fn::Join:
+                  - ""
+                  - - "arn:aws:s3:::"
+                    -
+                      Ref : tmpbucket
+                    - "/*"
+  Outputs:
+    WebsiteURL:
+      Value: {
+        Fn::GetAtt: [
+          "tmpbucket",
+          "WebsiteURL"
+        ]
+      }
+      Description: URL for website hosted on S3
+    S3BucketSecureURL:
+       Description: Name of S3 bucket to hold website content
+       Value: {
+         Fn::Join: [
+           "",
+           [
+             "https://",
+             {
+               Fn::GetAtt: [
+                 "tmpbucket",
+                 "DomainName"
+               ]
+             }
+           ]
+         ]
+       }
