@@ -6,6 +6,6 @@
   "author": "Mohd Faiz Hasim <faizhasim@gmail.com>",
   "license": "MIT",
   "devDependencies": {
-    "serverless": "^1.42.3"
+    "serverless": "^1.50.0"
   }
 }
