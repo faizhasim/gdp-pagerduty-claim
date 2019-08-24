@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/faizhasim/claim-pagerduty/pkg/pdfgenerator"
+	"github.com/faizhasim/gdp-pagerduty-claim/pkg/pdfgenerator"
 	"github.com/karrick/tparse"
 	"github.com/spf13/cobra"
 	"os"

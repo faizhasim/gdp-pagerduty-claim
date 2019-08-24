@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/faizhasim/claim-pagerduty/pkg/pdfgenerator"
+	"github.com/faizhasim/gdp-pagerduty-claim/pkg/pdfgenerator"
 	"github.com/karrick/tparse"
 	"os"
 	"path/filepath"
